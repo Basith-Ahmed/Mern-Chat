@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
+const ws = require("ws");
 
 const UserModel = require("./models/User");
 
@@ -38,11 +39,11 @@ app.get("/profile", (req, res) => {
   if (token) {
     jwt.verify(token, secretKey, {}, (err, data) => {
       if (err) throw err;
-      const {id, username} = data
-      res.json(data)
+      const { id, username } = data;
+      res.json(data);
     });
   } else {
-    res.status(401).json("no token")
+    res.status(401).json("no token");
   }
 });
 
@@ -50,7 +51,7 @@ app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const foundUser = await UserModel.findOne({ username: username });
   if (foundUser) {
-    const matched = bcrypt.compareSync(password, foundUser.hashedPassword);
+    const matched = bcrypt.compareSync(password, foundUser.password);
     if (matched) {
       jwt.sign(
         { userId: foundUser._id, username },
@@ -69,10 +70,10 @@ app.post("/login", async (req, res) => {
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
-    const hashedPassword = bcrypt.hashSync(password, salt)
+    const hashedPassword = bcrypt.hashSync(password, salt);
     const createdUser = await UserModel.create({
       username: username,
-      password: hashedPassword
+      password: hashedPassword,
     });
     jwt.sign(
       { userId: createdUser._id, username },
@@ -80,11 +81,50 @@ app.post("/register", async (req, res) => {
       {},
       (err, token) => {
         if (err) throw err;
-        res.cookie("token", token, {sameSite:'none', secure: true}).status(201).json({ id: createdUser._id });
-      });
+        res
+          .cookie("token", token, { sameSite: "none", secure: true })
+          .status(201)
+          .json({ id: createdUser._id });
+      }
+    );
   } catch (err) {
-    if (err) throw err
+    if (err) throw err;
   }
 });
 
-app.listen(4000);
+const server = app.listen(4000);
+
+const wss = new ws.WebSocketServer({ server });
+
+wss.on("connection", (connection, req) => {
+  // console.log('User connected')
+  // connection.send('hello')
+  // console.log(req.headers)
+  const cookies = req.headers.cookie;
+  if (cookies) {
+    //there might be alot of cookies
+    const tokenCookies = cookies
+      .split(";")
+      .find((str) => str.startsWith("token="));
+    if (tokenCookies) {
+      const token = tokenCookies.split("=")[1];
+      if (token) {
+        // console.log(token)
+        jwt.verify(token, secretKey, {}, (err, data) => {
+          if (err) throw err;
+          const { userId, username } = data;
+          connection.userId = userId;
+          connection.username = username;
+        });
+      }
+    }
+  }
+  // console.log([...wss.clients].map(clientInfo => clientInfo.username))
+
+  [...wss.clients].forEach(client => {
+    client.send(JSON.stringify({
+      online: [...wss.clients].map(c => ({userId: c.userId, username: c.username}))
+    }
+    ))
+  })
+});
