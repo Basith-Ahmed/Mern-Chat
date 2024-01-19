@@ -100,6 +100,8 @@ wss.on("connection", (connection, req) => {
   // console.log('User connected')
   // connection.send('hello')
   // console.log(req.headers)
+
+  //read user name and id
   const cookies = req.headers.cookie;
   if (cookies) {
     //there might be alot of cookies
@@ -119,11 +121,16 @@ wss.on("connection", (connection, req) => {
       }
     }
   }
-  // console.log([...wss.clients].map(clientInfo => clientInfo.username))
 
+connection.on("message", (message) => { //this message is sent as an object
+  message = JSON.parse(message.toString());
+  console.log(message);
+});
+
+  //notify everyone about online people(when someone connects)
   [...wss.clients].forEach(client => {
     client.send(JSON.stringify({
-      online: [...wss.clients].map(c => ({userId: c.userId, username: c.username}))
+      online: [...wss.clients].map(clientInfo => ({userId: clientInfo.userId, username: clientInfo.username}))
     }
     ))
   })

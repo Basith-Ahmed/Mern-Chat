@@ -14,7 +14,7 @@ export default function Avatar({ username, userId }) {
 
   return (
     <div className={"w-8 h-8 rounded-full flex items-center " + bgColor}>
-      <div className="text-center w-full">{username[0].toUpperCase()}</div>
+      <div className="text-center w-full opacity-80">{username[0].toUpperCase()}</div>
     </div>
   );
 }

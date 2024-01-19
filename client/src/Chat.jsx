@@ -1,10 +1,18 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Avatar from "./Avatar";
+import Logo from "./Logo";
+import { UserContext } from "./UserContext";
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
 
   const [onlinePeople, setOnlinePeople] = useState([]);
+
+  const [selectedContact, setSelectedContact] = useState(null);
+
+  const [newMessage, setNewMessage] = useState("");
+
+  const { username, id } = useContext(UserContext);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:4000/");
@@ -22,6 +30,9 @@ export default function Chat() {
     setOnlinePeople(people); //<---------------
   }
 
+  const onlinePeopleExcludingUs = { ...onlinePeople };
+  delete onlinePeopleExcludingUs[id];
+
   function handleMessage(event) {
     const messageData = JSON.parse(event.data);
     if ("online" in messageData) {
@@ -29,46 +40,91 @@ export default function Chat() {
     }
   }
 
+  function sendMessage(event) {
+    event.preventDefault(); //to prevent page from reloading
+    ws.send(JSON.stringify({
+      message: {
+        recipient: selectedContact,
+        text: newMessage
+      }
+    }))
+  }
+
   return (
     <div className="flex h-screen">
-      <div className="bg-white w-1/3 pl-4 pt-4">
-        <div className="text-blue-600 font-bold p-2 flex gap-2 mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"
-            />
-          </svg>
-          MernChat
-        </div>
+      <div className="bg-white w-1/3 pt-4">
+        <Logo />
         <div>
-          {Object.keys(onlinePeople).map((userId) => {
+          {Object.keys(onlinePeopleExcludingUs).map((userId) => {
             return (
-              <div key={userId} className="border-b border-gray-100 py-2 flex items-center gap-2">
-                <Avatar username={onlinePeople[userId]} userId={userId} />
-                <span>{onlinePeople[userId]}</span>
+              <div
+                key={userId}
+                onClick={() => setSelectedContact(userId)} //update style if clicked
+                className={
+                  "border-b border-gray-100 h-12 cursor-pointer flex " +
+                  (selectedContact === userId ? "bg-blue-100" : "")
+                }
+              >
+                {userId === selectedContact && (
+                  <div className="w-1 h-12 rounded-r-md bg-blue-500"></div> //<------------------ active blue bar
+                )}
+                <div className="pl-4 flex items-center gap-2">
+                  <Avatar
+                    username={onlinePeopleExcludingUs[userId]}
+                    userId={userId}
+                  />{" "}
+                  {/*<----------- avatar */}
+                  <span className="text-gray-800">
+                    {onlinePeopleExcludingUs[userId]}
+                  </span>{" "}
+                  {/*<----------- name*/}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
       <div className="flex flex-col bg-blue-50 w-2/3 p-2">
-        <div className="flex-grow">Messages</div>
-        <div className="flex gap-2">
+        <div className="flex-grow ">
+          {!selectedContact && (
+            <div className="h-full flex flex-grow items-center justify-center">
+              <div
+                role="alert"
+                className="relative flex px-2 py-2 text-base text-white bg-blue-500 rounded-lg font-regular items-center justify-center"
+              >
+                <div className="shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                    ></path>
+                  </svg>
+                </div>
+                <div className="ml-3 mr-3">
+                  No contacts are selected to display messages.
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        {selectedContact && (
+        <form onSubmit={sendMessage} className="flex gap-2">
           <input
             type="text"
+            value={newMessage}
+            onChange={event => setNewMessage(event.target.value)}
             placeholder="Type your message here"
             className="bg-white flex-grow border p-2 rounded-sm"
           />
-          <button className="bg-blue-500 p-2 text-white rounded-sm">
+          <button type="submit" className="bg-blue-500 p-2 text-white rounded-sm">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -84,7 +140,8 @@ export default function Chat() {
               />
             </svg>
           </button>
-        </div>
+        </form>
+        )}
       </div>
     </div>
   );
