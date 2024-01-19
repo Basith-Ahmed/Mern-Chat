@@ -69,17 +69,18 @@ app.post("/login", async (req, res) => {
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
+    const hashedPassword = bcrypt.hashSync(password, salt)
     const createdUser = await UserModel.create({
-      username,
-      password
+      username: username,
+      password: hashedPassword
     });
     jwt.sign(
-      { userId: createdUser._id },
+      { userId: createdUser._id, username },
       secretKey,
       {},
       (err, token) => {
         if (err) throw err;
-        res.cookie("token", token, {sameSite:'none'}).status(201).json({ id: createdUser._id, username });
+        res.cookie("token", token, {sameSite:'none', secure: true}).status(201).json({ id: createdUser._id });
       });
   } catch (err) {
     if (err) throw err
