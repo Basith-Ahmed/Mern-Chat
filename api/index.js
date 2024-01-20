@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
 
+const MessageModel = require('./models/Message')
 const UserModel = require("./models/User");
 
 dotenv.config();
@@ -122,9 +123,19 @@ wss.on("connection", (connection, req) => {
     }
   }
 
-connection.on("message", (message) => { //this message is sent as an object
-  message = JSON.parse(message.toString());
-  console.log(message);
+connection.on("message", async (message) => { //this message is sent as an object
+  const messageData = JSON.parse(message.toString());
+  const { recipient, text } = messageData;
+  if (recipient && text) { //if both exists
+    const messageDocument = await MessageModel.create({
+      sender: connection.userId,
+      recipient: recipient,
+      text: text
+    });
+    [...wss.clients]
+    .filter(client => client.userId === recipient)
+    .forEach(client => client.send(JSON.stringify({ text, sender: connection.userId, id: messageDocument._id })))
+  }
 });
 
   //notify everyone about online people(when someone connects)

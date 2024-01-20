@@ -12,6 +12,8 @@ export default function Chat() {
 
   const [newMessage, setNewMessage] = useState("");
 
+  const [messages, setMessages] = useState([]);
+
   const { username, id } = useContext(UserContext);
 
   useEffect(() => {
@@ -35,19 +37,22 @@ export default function Chat() {
 
   function handleMessage(event) {
     const messageData = JSON.parse(event.data);
+    console.log(event, messageData);
     if ("online" in messageData) {
       showOnline(messageData.online);
+    } else {
+      setMessages(prev => ([...prev, {isOur: false, text: messageData.text}]))
     }
   }
 
   function sendMessage(event) {
     event.preventDefault(); //to prevent page from reloading
     ws.send(JSON.stringify({
-      message: {
         recipient: selectedContact,
         text: newMessage
-      }
     }))
+    setMessages(prev => ([...prev, {text: newMessage, isOur: true}]))
+    setNewMessage("");
   }
 
   return (
@@ -112,6 +117,13 @@ export default function Chat() {
                   No contacts are selected to display messages.
                 </div>
               </div>
+            </div>
+          )}
+          {!!selectedContact && (
+            <div>
+              {messages.map(message => (
+                <div>{message.text}</div>
+              ))}
             </div>
           )}
         </div>
