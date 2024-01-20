@@ -5,7 +5,7 @@ import { UserContext } from "./UserContext";
 export default function RegisterAndLogin() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [isLogin, setIsLogin] = React.useState(false);
+  const [isLogin, setIsLogin] = React.useState(true);
 
   const { setUsername: setLoggedInUsername, setId } = useContext(UserContext);
 

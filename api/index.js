@@ -7,7 +7,7 @@ const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
 
-const MessageModel = require('./models/Message')
+const MessageModel = require("./models/Message");
 const UserModel = require("./models/User");
 
 dotenv.config();
@@ -123,26 +123,41 @@ wss.on("connection", (connection, req) => {
     }
   }
 
-connection.on("message", async (message) => { //this message is sent as an object
-  const messageData = JSON.parse(message.toString());
-  const { recipient, text } = messageData;
-  if (recipient && text) { //if both exists
-    const messageDocument = await MessageModel.create({
-      sender: connection.userId,
-      recipient: recipient,
-      text: text
-    });
-    [...wss.clients]
-    .filter(client => client.userId === recipient)
-    .forEach(client => client.send(JSON.stringify({ text, sender: connection.userId, id: messageDocument._id })))
-  }
-});
+  connection.on("message", async (message) => {
+    //this message is sent as an object
+    const messageData = JSON.parse(message.toString());
+    const { recipient, text } = messageData;
+    if (recipient && text) {
+      //if both exists
+      const messageDocument = await MessageModel.create({
+        sender: connection.userId,
+        recipient: recipient,
+        text: text,
+      });
+      [...wss.clients]
+        .filter((client) => client.userId === recipient)
+        .forEach((client) =>
+          client.send(
+            JSON.stringify({
+              text,
+              sender: connection.userId,
+              recipient: recipient,
+              id: messageDocument._id,
+            })
+          )
+        );
+    }
+  });
 
   //notify everyone about online people(when someone connects)
-  [...wss.clients].forEach(client => {
-    client.send(JSON.stringify({
-      online: [...wss.clients].map(clientInfo => ({userId: clientInfo.userId, username: clientInfo.username}))
-    }
-    ))
-  })
+  [...wss.clients].forEach((client) => {
+    client.send(
+      JSON.stringify({
+        online: [...wss.clients].map((clientInfo) => ({
+          userId: clientInfo.userId,
+          username: clientInfo.username,
+        })),
+      })
+    );
+  });
 });
