@@ -108,7 +108,7 @@ async function getUserDataFromRequest(req) {
 }
 
 app.get("/people", async (req, res) => { //get all the users
-  const users = await UserModel.findOne({}, {'_id': 1, username: 1})
+  const users = await UserModel.find({}, {'_id': 1, username: 1})
   res.json(users)
 })
 

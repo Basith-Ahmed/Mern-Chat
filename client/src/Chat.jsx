@@ -4,11 +4,14 @@ import Logo from "./Logo";
 import { UserContext } from "./UserContext";
 import { uniqBy } from "lodash";
 import axios from "axios";
+import Contact from "./Contact";
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
 
   const [onlinePeople, setOnlinePeople] = useState([]);
+
+  const [offlinePeople, setOfflinePeople] = useState([]);
 
   const [selectedContact, setSelectedContact] = useState(null);
 
@@ -42,7 +45,7 @@ export default function Chat() {
     peopleArr.forEach(({ userId, username }) => {
       people[userId] = username;
     });
-    console.log(people);
+    console.log("Online: ", people);
     setOnlinePeople(people); //<---------------
   }
 
@@ -86,11 +89,18 @@ export default function Chat() {
   }, [messages]);
 
   useEffect(() => {
-    axios.get('/people')
-    .then(res => {
-      const offlinePeople = res.data.filter(p => p._id !== id)
-      console.log(offlinePeople)
-    })
+    //get all the registered people to display in side bar
+    axios.get("/people").then((res) => {
+      const offlinePeopleArr = res.data //returns an array
+        .filter((p) => p._id !== id) //<---------- registered users excluding us
+        .filter((p) => !Object.keys(onlinePeople).includes(p._id)); //<---------- people who are not online
+      const offlinePeopleObj = {};
+      offlinePeopleArr.forEach((p) => {
+        //array converting to object
+        offlinePeopleObj[p._id] = p.username;
+      });
+      setOfflinePeople(offlinePeopleObj);
+    });
   }, [onlinePeople]);
 
   useEffect(() => {
@@ -107,6 +117,8 @@ export default function Chat() {
 
   const messagesWithoutDupes = uniqBy(messages, "_id");
 
+  console.log("the online people we created", onlinePeopleExcludingUs)
+console.log("the offline people we created", offlinePeople)
   return (
     <div className="flex h-screen">
       <div className="bg-white w-1/3 pt-4">
@@ -114,30 +126,28 @@ export default function Chat() {
         <div>
           {Object.keys(onlinePeopleExcludingUs).map((userId) => {
             return (
-              <div
+              // CONTACTS - Online
+              <Contact
                 key={userId}
-                onClick={() => setSelectedContact(userId)} //update style if clicked
-                className={
-                  "border-b border-gray-100 h-12 cursor-pointer flex " +
-                  (selectedContact === userId ? "bg-blue-100" : "")
-                }
-              >
-                {userId === selectedContact && (
-                  <div className="w-1 h-12 rounded-r-md bg-blue-500"></div> //<------------------ active blue bar
-                )}
-                <div className="pl-4 flex items-center gap-2">
-                  <Avatar
-                    online={true}
-                    username={onlinePeopleExcludingUs[userId]}
-                    userId={userId}
-                  />{" "}
-                  {/*<----------- avatar */}
-                  <span className="text-gray-800">
-                    {onlinePeopleExcludingUs[userId]}
-                  </span>{" "}
-                  {/*<----------- name*/}
-                </div>
-              </div>
+                userId={userId}
+                onlineOrOfflinePeople={onlinePeopleExcludingUs}
+                setSelectedContact={setSelectedContact}
+                selectedContact={selectedContact}
+                online={true}
+              />
+            );
+          })}
+          {Object.keys(offlinePeople).map((userId) => {
+            return (
+              // CONTACTS - Offline
+              <Contact
+                key={userId}
+                userId={userId}
+                onlineOrOfflinePeople={offlinePeople}
+                setSelectedContact={setSelectedContact}
+                selectedContact={selectedContact}
+                online={false}
+              />
             );
           })}
         </div>
