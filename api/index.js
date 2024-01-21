@@ -93,6 +93,34 @@ app.post("/register", async (req, res) => {
   }
 });
 
+async function getUserDataFromRequest(req) {
+  return new Promise((resolve, reject) => {
+    const token = req.cookies?.token;
+    if (token) {
+      jwt.verify(token, secretKey, {}, (err, userData) => {
+        if (err) throw err;
+        resolve(userData);
+      });
+    } else {
+      reject("no token found");
+    }
+  });
+}
+
+app.get("/messages/:userId", async (req, res) => {
+  const { userId } = req.params;
+  // console.log(userId); //check
+  // res.json(userId); //check
+  const userData =  await getUserDataFromRequest(req);
+  const messages = await MessageModel.find({
+    sender: { $in: [userId, userData.userId] },
+    recipient: { $in: [userId, userData.userId] },
+  })
+    .sort({ createdAt: -1 })
+    .exec();
+  res.json(messages);
+});
+
 const server = app.listen(4000);
 
 const wss = new ws.WebSocketServer({ server });

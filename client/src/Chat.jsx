@@ -3,6 +3,7 @@ import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./UserContext";
 import { uniqBy } from "lodash";
+import axios from 'axios'
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
@@ -17,13 +18,18 @@ export default function Chat() {
 
   const { username, id } = useContext(UserContext);
 
-  const messageBoxRef = useRef() //for messages auto sccrolling
+  const divUnderMessages = useRef() //for messages auto sccrolling
 
   useEffect(() => {
+    connectToWs()
+  }, []);
+  
+  function connectToWs() {
     const ws = new WebSocket("ws://localhost:4000/");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-  }, []);
+    ws.addEventListener("close", () => connectToWs()); //if the server losses conection it establishes it again
+  }
 
   function showOnline(peopleArr) {
     //remove duplicates
@@ -34,12 +40,7 @@ export default function Chat() {
     console.log(people);
     setOnlinePeople(people); //<---------------
   }
-
-  const onlinePeopleExcludingUs = { ...onlinePeople };
-  delete onlinePeopleExcludingUs[id];
-
-  const messagesWithoutDupes = uniqBy(messages, "id");
-
+  
   function handleMessage(event) {
     const messageData = JSON.parse(event.data);
     console.log(event, messageData);
@@ -49,7 +50,7 @@ export default function Chat() {
       setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
-
+  
   function sendMessage(event) {
     event.preventDefault(); //to prevent page from reloading
     ws.send(
@@ -57,11 +58,36 @@ export default function Chat() {
         recipient: selectedContact,
         text: newMessage,
       })
-    );
-    setMessages((prev) => [...prev, { text: newMessage, sender: id, recipient: selectedContact, id: Date.now() }]);
-    setNewMessage("");
-  }
+      );
+      setMessages(prev => 
+        ([...prev, 
+          { text: newMessage, 
+            sender: id, 
+            recipient: selectedContact, 
+            id: Date.now() 
+          }]));
+          
+          setNewMessage("");
+        }
 
+  useEffect(() => {
+    const div = divUnderMessages.current;
+    if(div) {
+      div.scrollIntoView({behavior: 'smooth', block: 'end'})
+    }
+  }, [messages])
+
+  useEffect(() => {
+    if(selectedContact) {
+      axios.get('/messages/' + selectedContact)
+    }
+  }, [selectedContact])
+
+  const onlinePeopleExcludingUs = { ...onlinePeople };
+  delete onlinePeopleExcludingUs[id];
+
+  const messagesWithoutDupes = uniqBy(messages, "id");
+        
   return (
     <div className="flex h-screen">
       <div className="bg-white w-1/3 pt-4">
@@ -127,16 +153,17 @@ export default function Chat() {
             </div>
           )}
           {!!selectedContact && (
-            <div className="relative h-full">
-              <div className="overflow-y-scroll absolute inset-0">
+            <div className="relative h-full"> {/*the box for scrolling messages start here*/}
+              <div className="overflow-y-scroll overflow-hidden absolute inset-0 bottom-2">
                 {messagesWithoutDupes.map((message, index) => (
                   <div className={" " + (message.sender === id ? "text-right mr-3" : "text-left")}>
                     <div 
-                      className={"rounded-full py-2 px-4 my-2 text-sm inline-block " + (message.sender === id ? "bg-blue-500 text-white" : "bg-white text-gray-600")}
+                      className={"rounded-full py-2 px-4 my-1 text-sm inline-block " + (message.sender === id ? "bg-blue-500 text-white" : "bg-white text-gray-600")}
                       key={index}>{message.text}
                     </div>
                   </div>
                 ))}
+                <div ref={divUnderMessages}></div>
               </div>
             </div>
           )}
@@ -148,7 +175,7 @@ export default function Chat() {
               value={newMessage}
               onChange={(event) => setNewMessage(event.target.value)}
               placeholder="Type your message here"
-              className="bg-white flex-grow border p-2 rounded-full"
+              className="bg-white flex-grow border p-2 pl-4 rounded-full"
             />
             <button
               type="submit"
