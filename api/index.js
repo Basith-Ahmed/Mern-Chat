@@ -107,6 +107,11 @@ async function getUserDataFromRequest(req) {
   });
 }
 
+app.get("/people", async (req, res) => { //get all the users
+  const users = await UserModel.findOne({}, {'_id': 1, username: 1})
+  res.json(users)
+})
+
 app.get("/messages/:userId", async (req, res) => {
   const { userId } = req.params;
   // console.log(userId); //check
@@ -116,8 +121,7 @@ app.get("/messages/:userId", async (req, res) => {
     sender: { $in: [userId, userData.userId] },
     recipient: { $in: [userId, userData.userId] },
   })
-    .sort({ createdAt: -1 })
-    .exec();
+    .sort({ createdAt: 1 })
   res.json(messages);
 });
 
@@ -170,7 +174,7 @@ wss.on("connection", (connection, req) => {
               text,
               sender: connection.userId,
               recipient: recipient,
-              id: messageDocument._id,
+              _id: messageDocument._id,
             })
           )
         );

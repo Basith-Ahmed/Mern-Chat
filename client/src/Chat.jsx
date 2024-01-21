@@ -3,7 +3,7 @@ import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./UserContext";
 import { uniqBy } from "lodash";
-import axios from 'axios'
+import axios from "axios";
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
@@ -18,17 +18,22 @@ export default function Chat() {
 
   const { username, id } = useContext(UserContext);
 
-  const divUnderMessages = useRef() //for messages auto sccrolling
+  const divUnderMessages = useRef(); //for messages auto sccrolling
 
   useEffect(() => {
-    connectToWs()
+    connectToWs();
   }, []);
-  
+
   function connectToWs() {
     const ws = new WebSocket("ws://localhost:4000/");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-    ws.addEventListener("close", () => connectToWs()); //if the server losses conection it establishes it again
+    ws.addEventListener("close", () => {
+      setTimeout(() => {
+        console.log("Disconnected, trying to connect again!");
+        connectToWs();
+      }, 1000);
+    }); //if the server losses conection it establishes it again
   }
 
   function showOnline(peopleArr) {
@@ -40,7 +45,7 @@ export default function Chat() {
     console.log(people);
     setOnlinePeople(people); //<---------------
   }
-  
+
   function handleMessage(event) {
     const messageData = JSON.parse(event.data);
     console.log(event, messageData);
@@ -50,7 +55,7 @@ export default function Chat() {
       setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
-  
+
   function sendMessage(event) {
     event.preventDefault(); //to prevent page from reloading
     ws.send(
@@ -58,36 +63,50 @@ export default function Chat() {
         recipient: selectedContact,
         text: newMessage,
       })
-      );
-      setMessages(prev => 
-        ([...prev, 
-          { text: newMessage, 
-            sender: id, 
-            recipient: selectedContact, 
-            id: Date.now() 
-          }]));
-          
-          setNewMessage("");
-        }
+    );
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: newMessage,
+        sender: id,
+        recipient: selectedContact,
+        _id: Date.now(),
+      },
+    ]);
+
+    setNewMessage("");
+  }
 
   useEffect(() => {
+    //to swipe to the new messages
     const div = divUnderMessages.current;
-    if(div) {
-      div.scrollIntoView({behavior: 'smooth', block: 'end'})
+    if (div) {
+      div.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [messages])
+  }, [messages]);
 
   useEffect(() => {
-    if(selectedContact) {
-      axios.get('/messages/' + selectedContact)
+    axios.get('/people')
+    .then(res => {
+      const offlinePeople = res.data.filter(p => p._id !== id)
+      console.log(offlinePeople)
+    })
+  }, [onlinePeople]);
+
+  useEffect(() => {
+    //to see the old messages
+    if (selectedContact) {
+      axios.get("/messages/" + selectedContact).then((res) => {
+        setMessages(res.data);
+      });
     }
-  }, [selectedContact])
+  }, [selectedContact]);
 
   const onlinePeopleExcludingUs = { ...onlinePeople };
   delete onlinePeopleExcludingUs[id];
 
-  const messagesWithoutDupes = uniqBy(messages, "id");
-        
+  const messagesWithoutDupes = uniqBy(messages, "_id");
+
   return (
     <div className="flex h-screen">
       <div className="bg-white w-1/3 pt-4">
@@ -108,6 +127,7 @@ export default function Chat() {
                 )}
                 <div className="pl-4 flex items-center gap-2">
                   <Avatar
+                    online={true}
                     username={onlinePeopleExcludingUs[userId]}
                     userId={userId}
                   />{" "}
@@ -153,13 +173,28 @@ export default function Chat() {
             </div>
           )}
           {!!selectedContact && (
-            <div className="relative h-full"> {/*the box for scrolling messages start here*/}
+            <div className="relative h-full">
+              {" "}
+              {/*the box for scrolling messages start here*/}
               <div className="overflow-y-scroll overflow-hidden absolute inset-0 bottom-2">
                 {messagesWithoutDupes.map((message, index) => (
-                  <div className={" " + (message.sender === id ? "text-right mr-3" : "text-left")}>
-                    <div 
-                      className={"rounded-full py-2 px-4 my-1 text-sm inline-block " + (message.sender === id ? "bg-blue-500 text-white" : "bg-white text-gray-600")}
-                      key={index}>{message.text}
+                  <div
+                    key={message._id}
+                    className={
+                      " " +
+                      (message.sender === id ? "text-right mr-3" : "text-left")
+                    }
+                  >
+                    <div
+                      className={
+                        "rounded-full py-2 px-4 my-1 text-sm inline-block " +
+                        (message.sender === id
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-600")
+                      }
+                      key={index}
+                    >
+                      {message.text}
                     </div>
                   </div>
                 ))}

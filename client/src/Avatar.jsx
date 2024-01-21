@@ -1,4 +1,4 @@
-export default function Avatar({ username, userId }) {
+export default function Avatar({ username, userId, online }) {
   const colors = [
     "bg-blue-200",
     "bg-green-200",
@@ -13,8 +13,11 @@ export default function Avatar({ username, userId }) {
   const bgColor = colors[userIdBase10 % colors.length];
 
   return (
-    <div className={"w-8 h-8 rounded-full flex items-center " + bgColor}>
+    <div className={"w-8 h-8 relative rounded-full flex items-center " + bgColor}> {/*you have to use relative so the position we give to the green dot inside this div will be put with respect to (relative) this div and not the entire webpage*/}
       <div className="text-center w-full opacity-80">{username[0].toUpperCase()}</div>
+      {online && (
+        <div className="absolute h-3 w-3 rounded-full bottom-0 right-0 bg-green-500"></div>
+      )}
     </div>
   );
 }
