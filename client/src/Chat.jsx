@@ -19,7 +19,7 @@ export default function Chat() {
 
   const [messages, setMessages] = useState([]);
 
-  const { username, id } = useContext(UserContext);
+  const { username, id, setId, setUsername } = useContext(UserContext);
 
   const divUnderMessages = useRef(); //for messages auto sccrolling
 
@@ -57,6 +57,14 @@ export default function Chat() {
     } else if ("text" in messageData) {
       setMessages((prev) => [...prev, { ...messageData }]);
     }
+  }
+
+  function logout() {
+    axios.post('/logout')
+    .then(() => {
+      setId(null);
+      setUsername(null);
+    })
   }
 
   function sendMessage(event) {
@@ -121,35 +129,41 @@ export default function Chat() {
 console.log("the offline people we created", offlinePeople)
   return (
     <div className="flex h-screen">
-      <div className="bg-white w-1/3 pt-4">
-        <Logo />
-        <div>
-          {Object.keys(onlinePeopleExcludingUs).map((userId) => {
-            return (
-              // CONTACTS - Online
-              <Contact
-                key={userId}
-                userId={userId}
-                onlineOrOfflinePeople={onlinePeopleExcludingUs}
-                setSelectedContact={setSelectedContact}
-                selectedContact={selectedContact}
-                online={true}
-              />
-            );
-          })}
-          {Object.keys(offlinePeople).map((userId) => {
-            return (
-              // CONTACTS - Offline
-              <Contact
-                key={userId}
-                userId={userId}
-                onlineOrOfflinePeople={offlinePeople}
-                setSelectedContact={setSelectedContact}
-                selectedContact={selectedContact}
-                online={false}
-              />
-            );
-          })}
+      <div className="bg-white w-1/3 pt-4 flex flex-col">
+        <div className="flex-grow">
+          <Logo />
+          <div>
+            {Object.keys(onlinePeopleExcludingUs).map((userId) => {
+              return (
+                // CONTACTS - Online
+                <Contact
+                  key={userId}
+                  userId={userId}
+                  onlineOrOfflinePeople={onlinePeopleExcludingUs}
+                  setSelectedContact={setSelectedContact}
+                  selectedContact={selectedContact}
+                  online={true}
+                />
+              );
+            })}
+            {Object.keys(offlinePeople).map((userId) => {
+              return (
+                // CONTACTS - Offline
+                <Contact
+                  key={userId}
+                  userId={userId}
+                  onlineOrOfflinePeople={offlinePeople}
+                  setSelectedContact={setSelectedContact}
+                  selectedContact={selectedContact}
+                  online={false}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div className="p-2 text-center">
+          <span>Logged in as {username}</span>
+          <button onClick={logout} className="bg-red-500 rounded-full p-1 px-4 text-white font-semibold">Logout</button>
         </div>
       </div>
       <div className="flex flex-col bg-blue-50 w-2/3 p-2">
