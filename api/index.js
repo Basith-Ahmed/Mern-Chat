@@ -6,6 +6,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
+const fs = require("fs");
 
 const MessageModel = require("./models/Message");
 const UserModel = require("./models/User");
@@ -22,6 +23,7 @@ const secretKey = process.env.SECRET_KEY;
 const salt = bcrypt.genSaltSync(10);
 
 const app = express();
+app.use('/uploads', express.static(__dirname + '/uploads'))
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -69,7 +71,7 @@ app.post("/login", async (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  res.cookie("token", '', {sameSite: "none", secure: true}) //to logout we set the cookie as empty string
+  res.cookie("token", '', {sameSite: "none", secure: true}).json('ok') //to logout we set the cookie as empty string
 })
 
 app.post("/register", async (req, res) => {
@@ -154,6 +156,7 @@ connection.timer =  setInterval(() => {
   connection.ping();
   connection.deathTimer = setTimeout(() => {
     connection.isAlive = false;
+    clearInterval(connection.timer)
     connection.terminate()
     notifyAboutOnlinePeople()
     // console.log('death')
@@ -188,14 +191,27 @@ connection.on('pong', () => {
   connection.on("message", async (message) => {
     //this message is sent as an object
     const messageData = JSON.parse(message.toString());
-    const { recipient, text } = messageData;
-    if (recipient && text) {
+    const { recipient, text, file } = messageData;
+    let filename = null;
+    if (file && file.name) {
+      const parts = file.name.split('.');
+      const ext = parts[parts.length - 1];
+      filename = Date.now() + '.' + ext
+      const path = __dirname + '/uploads/' + filename;
+      const bufferdata = new Buffer.from(file.data.split(',')[1], 'base64');
+      fs.writeFile(path, bufferdata, () => {
+        console.log("file saved")
+      })
+    }
+    if (recipient && (text || file)) {
       //if both exists
       const messageDocument = await MessageModel.create({
         sender: connection.userId,
         recipient: recipient,
         text: text,
+        file: file? filename : null
       });
+      console.log('create message');
       [...wss.clients]
         .filter((client) => client.userId === recipient)
         .forEach((client) =>
@@ -204,6 +220,7 @@ connection.on('pong', () => {
               text,
               sender: connection.userId,
               recipient: recipient,
+              file: file ? filename : null,
               _id: messageDocument._id,
             })
           )

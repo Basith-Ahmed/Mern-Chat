@@ -29,16 +29,16 @@ export default function RegisterAndLogin() {
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           placeholder="Username"
-          className="block w-full rounded-sm p-2 mb-2 border"
+          className="block w-full rounded-full p-2 pl-4 mb-2 border"
         />
         <input
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="Password"
-          className="block w-full rounded-sm p-2 mb-2 border"
+          className="block w-full rounded-full p-2 pl-4 mb-2 border"
         />
-        <button className="bg-blue-500 text-white block w-full rounded-sm p-2">
+        <button className="bg-blue-500 text-white block w-full rounded-full p-2">
           {isLogin ? "Login" : "Register"}
         </button>
         <div className="text-center mt-2">
@@ -46,7 +46,7 @@ export default function RegisterAndLogin() {
             <div>
               Not a user?
               <button
-                className="ml-1 text-sky-400"
+                className="ml-1 text-sky-600"
                 onClick={() => setIsLogin(false)}
               >
                 Register.
@@ -57,7 +57,7 @@ export default function RegisterAndLogin() {
             <div>
               Already a user?
               <button
-                className="ml-1 text-sky-400"
+                className="ml-1 text-sky-600"
                 onClick={() => setIsLogin(true)}
               >
                 Login.

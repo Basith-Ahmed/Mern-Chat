@@ -55,37 +55,58 @@ export default function Chat() {
     if ("online" in messageData) {
       showOnline(messageData.online);
     } else if ("text" in messageData) {
-      setMessages((prev) => [...prev, { ...messageData }]);
+      if (messageData.sender === selectedContact) {
+        setMessages((prev) => [...prev, { ...messageData }]);
+      }
     }
   }
 
   function logout() {
-    axios.post('/logout')
-    .then(() => {
+    axios.post("/logout").then(() => {
+      setWs(null);
       setId(null);
       setUsername(null);
-    })
+    });
   }
 
-  function sendMessage(event) {
-    event.preventDefault(); //to prevent page from reloading
+  function sendMessage(event, file = null) {
+    if (event) event.preventDefault();
     ws.send(
       JSON.stringify({
         recipient: selectedContact,
         text: newMessage,
+        file,
       })
     );
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: newMessage,
-        sender: id,
-        recipient: selectedContact,
-        _id: Date.now(),
-      },
-    ]);
+    
+    if (file) {
+      axios.get("/messages/" + selectedContact).then((res) => {
+        setMessages(res.data);
+      });
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: newMessage,
+          sender: id,
+          recipient: selectedContact,
+          _id: Date.now(),
+        },
+      ]);
+      setNewMessage("");
+    }
+  }
 
-    setNewMessage("");
+  function sendFile(event) {
+    const reader = new FileReader();
+    reader.readAsDataURL(event.target.files[0]);
+    reader.onload = () => {
+      //runs after loading the file
+      sendMessage(null, {
+        info: event.target.files[0], //image is converted to base 64
+        data: reader.result,
+      });
+    };
   }
 
   useEffect(() => {
@@ -125,8 +146,8 @@ export default function Chat() {
 
   const messagesWithoutDupes = uniqBy(messages, "_id");
 
-  console.log("the online people we created", onlinePeopleExcludingUs)
-console.log("the offline people we created", offlinePeople)
+  console.log("the online people we created", onlinePeopleExcludingUs);
+  console.log("the offline people we created", offlinePeople);
   return (
     <div className="flex h-screen">
       <div className="bg-white w-1/3 pt-4 flex flex-col">
@@ -161,9 +182,31 @@ console.log("the offline people we created", offlinePeople)
             })}
           </div>
         </div>
-        <div className="p-2 text-center">
-          <span>Logged in as {username}</span>
-          <button onClick={logout} className="bg-red-500 rounded-full p-1 px-4 text-white font-semibold">Logout</button>
+        <div className="p-2 text-center flex justify-center">
+          <span className="text-sm text-gray-700 flex items-center mr-2 gap-1 font-semibold">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+              />
+            </svg>
+
+            {username}
+          </span>
+          <button
+            onClick={logout}
+            className="bg-red-500 rounded-full p-2 px-4 text-white font-semibold"
+          >
+            Logout
+          </button>
         </div>
       </div>
       <div className="flex flex-col bg-blue-50 w-2/3 p-2">
@@ -219,6 +262,31 @@ console.log("the offline people we created", offlinePeople)
                       key={index}
                     >
                       {message.text}
+                      {message.file && (
+                        <div className="flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="w-4 h-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"
+                            />
+                          </svg>
+                          <a
+                          target="_blank"
+                            className="underline"
+                            href={axios.defaults.baseURL + "/uploads" + message.file}
+                          >
+                            {message.file}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -234,8 +302,29 @@ console.log("the offline people we created", offlinePeople)
               value={newMessage}
               onChange={(event) => setNewMessage(event.target.value)}
               placeholder="Type your message here"
-              className="bg-white flex-grow border p-2 pl-4 rounded-full"
+              className="bg-white flex-grow border p-2 px-4 rounded-full"
             />
+            <label
+              type="button"
+              className="bg-blue-200 text-blue-900 rounded-full p-2 flex items-center justify-center"
+            >
+              <input type="file" className="hidden" onChange={sendFile} />{" "}
+              {/*file input sender */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"
+                />
+              </svg>
+            </label>
             <button
               type="submit"
               className="bg-blue-500 p-2 text-white rounded-full"
