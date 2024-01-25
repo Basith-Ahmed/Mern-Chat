@@ -281,7 +281,7 @@ export default function Chat() {
                           <a
                           target="_blank"
                             className="underline"
-                            href={axios.defaults.baseURL + "/uploads" + message.file}
+                            href={axios.defaults.baseURL + "/uploads/" + message.file}
                           >
                             {message.file}
                           </a>

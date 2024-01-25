@@ -1,6 +1,6 @@
 export default function Logo() {
   return (
-    <div className="text-blue-600 font-bold p-2 flex gap-2 mb-4 pl-4">
+    <div className="text-blue-600 font-bold p-2 flex gap-2 mb-4 pl-4 ml-2">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
