@@ -43,15 +43,6 @@ Upon launching MernChat, users can register for an account or log in if they alr
 - See the online/offline status of users.
 - Log out securely with the logout button.
 
-
-## Running Tests
-
-**(Replace with instructions on running your tests)**
-
-## Deployment
-
-**(Replace with instructions on deploying MernChat to a live system)**
-
 ## Built With
 
 - [React](https://reactjs.org/) - The front-end framework used.
