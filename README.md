@@ -22,15 +22,17 @@ MernChat is a cutting-edge messaging platform built with the MERN stack (MongoDB
 
 #### Installation
 
-1. Clone the repository: ```git clone https://github.com/yourusername/MernChat.git```
-2. Install server packages: ```cd MernChat && npm install```
-3. Install client packages: ```cd client && npm install```
-4. Create a `.env` file in the root directory with:
+1. Clone the repository:
+   ```git clone https://github.com/yourusername/MernChat.git```
+3. Install server packages:
+   ```cd MernChat && npm install```
+5. Install client packages: ```cd client && npm install```
+6. Create a `.env` file in the root directory with:
     * MongoDB URI
     * JWT secret
     * Any other required environment variables
-5. Start the server: ```npm start```
-6. In a new terminal, navigate to the client directory and start the React app: ```cd client && npm start```
+7. Start the server: ```npm start```
+8. In a new terminal, navigate to the client directory and start the React app: ```cd client && npm start```
 
 MernChat should now be running at http://localhost:3000.
 
