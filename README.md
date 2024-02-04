@@ -22,10 +22,8 @@ MernChat is a cutting-edge messaging platform built with the MERN stack (MongoDB
 
 #### Installation
 
-1. Clone the repository:
-   ```git clone https://github.com/yourusername/MernChat.git```
-3. Install server packages:
-   ```cd MernChat && npm install```
+1. Clone the repository:```git clone https://github.com/yourusername/MernChat.git```
+3. Install server packages:```cd MernChat && npm install```
 5. Install client packages: ```cd client && npm install```
 6. Create a `.env` file in the root directory with:
     * MongoDB URI
@@ -72,8 +70,3 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-
-
-## Acknowledgments
-
-
