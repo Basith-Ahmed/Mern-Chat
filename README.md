@@ -80,7 +80,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* Basith AHmed - MernChat (Basith-Ahmed)
+* Basith Ahmed - MernChat (Basith-Ahmed)
 
 ## License
 
